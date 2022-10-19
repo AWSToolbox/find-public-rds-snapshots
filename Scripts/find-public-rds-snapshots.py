@@ -19,6 +19,7 @@ import colored
 import botocore
 import boto3
 
+from botocore.exceptions import ClientError, UnauthorizedSSOTokenError
 from colored import stylize
 from prettytable import PrettyTable
 from yaspin import yaspin
@@ -184,7 +185,7 @@ def get_region_list():
                 regions[nsc] = get_region_long_name(ssm, nsc)
 
             sorted_regions = dict(sorted(regions.items()))
-        except botocore.exceptions.ClientError:
+        except (ClientError, UnauthorizedSSOTokenError):
             spinner.fail("💥")
             print(stylize("Fatal: The security token included in the request is invalid. - Aborting!", colored.fg("red")))
             sys.exit(0)
@@ -325,7 +326,7 @@ def setup_arg_parser():
     optional.add_argument('-j', '--json', action="store_true", help="Save the results as a json formarted file", default=False)
     optional.add_argument('-f', '--filename', type=str, help='The filename to save the results to', default='search-results')
 
-    sorting.add_argument('-S', '--sort-order', type=str, help="Define the sort order of the results (E,R,S,T)")
+    sorting.add_argument('-S', '--sort-order', type=str, help="Define the sort order of the results (E, R, S, T)")
 
     return parser
 
