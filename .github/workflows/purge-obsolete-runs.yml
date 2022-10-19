@@ -1,0 +1,15 @@
+name: Purge obsolete workflow runs
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '53 5 * * 1'
+
+jobs:
+  purge_obsolete_workflows:
+    name: Purge obsolete workflow runs
+    runs-on: ubuntu-latest
+    steps:
+      - name: Purge obsolete workflow runs
+        uses: otto-contentfactory/purge-workflow-runs@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
