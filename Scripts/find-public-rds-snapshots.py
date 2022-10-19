@@ -277,7 +277,6 @@ def find_snapshots(args):
     global region_total
     threads = []
     results = []
-    count = 0
 
     how_many = len(args.regions)
     region_total = how_many
@@ -285,7 +284,6 @@ def find_snapshots(args):
     with yaspin(text=stylize(f"Processing Region List ({how_many} threads)", colored.fg("green")), timer=True) as spinner:
         with ThreadPoolExecutor(max_workers=how_many) as executor:
             for region in args.regions:
-                count += 1
                 threads.append(executor.submit(find_snapshots_per_region, region, args, spinner))
 
             for task in as_completed(threads):
