@@ -11,7 +11,6 @@ import re
 import sys
 import warnings
 
-from argparse import ArgumentParser, SUPPRESS
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from functools import cmp_to_key
 from operator import itemgetter
@@ -309,13 +308,13 @@ def setup_arg_parser():
 
     epilog = "Search Options: E=Database Engine, R=Region Name, S=Databse Size, T=Creation Time.\nPrefixing any of the above with an exclamation sign (!) will invert the order."
 
-    parser = ArgumentParser(prog='find-public-rds-snapshots', description='Locate any public rds snapshots', add_help=False, epilog=epilog, formatter_class=CustomFormatter)
+    parser = argparse.ArgumentParser(prog='find-public-rds-snapshots', description='Locate any public rds snapshots', add_help=False, epilog=epilog, formatter_class=CustomFormatter)
     flags = parser.add_argument_group('flags')
     required = parser.add_argument_group('required arguments')
     optional = parser.add_argument_group('optional arguments')
     sorting = parser.add_argument_group('sorting arguments')
 
-    flags.add_argument('-h', '--help', action='help', default=SUPPRESS, help='show this help message and exit')
+    flags.add_argument('-h', '--help', action='help', default=argparse.SUPPRESS, help='show this help message and exit')
     flags.add_argument('-v', '--verbose', action="store_true", help="Account level output", default=False)
 
     required.add_argument('-r', '--regions', type=str, help='A comma seperated list of regions to search', default='all')
