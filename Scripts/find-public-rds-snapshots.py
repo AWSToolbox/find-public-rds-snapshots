@@ -7,6 +7,7 @@ Docs to follow
 import argparse
 import csv
 import json
+from multiprocessing.connection import Client
 import re
 import sys
 import warnings
@@ -14,9 +15,10 @@ import warnings
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from functools import cmp_to_key
 from operator import itemgetter
+from typing import Any
+from xmlrpc.client import boolean
 
 import colored
-import botocore
 import boto3
 
 from botocore.exceptions import ClientError, UnauthorizedSSOTokenError
@@ -28,7 +30,7 @@ regions_in_flight = 0
 region_total = 0
 
 
-def save_results_as_csv(args, results):
+def save_results_as_csv(args: argparse.Namespace, results: list[dict]) -> None:
     """
     Docs
     """
@@ -40,7 +42,7 @@ def save_results_as_csv(args, results):
             writer.writerow([None if column not in row else row[column] for column in columns])
 
 
-def save_results_as_json(args, results):
+def save_results_as_json(args: argparse.Namespace, results: list[dict]) -> None:
     """
     Docs
     """
@@ -48,20 +50,13 @@ def save_results_as_json(args, results):
         json.dump(results, outfile, indent=4, default=str)
 
 
-def print_table_of_results(results):
+def print_table_of_results(results: list[dict]) -> None:
     """
     Docs
     """
     table = PrettyTable()
 
-    table.field_names = [
-                         'Region',
-                         'Snapshot Identifier',
-                         'Instance Identifier',
-                         'Creation Time',
-                         'Engine',
-                         'Size'
-                        ]
+    table.field_names = ['Region', 'Snapshot Identifier', 'Instance Identifier', 'Creation Time', 'Engine', 'Size']
 
     for parts in results:
         table.add_row([
@@ -75,14 +70,14 @@ def print_table_of_results(results):
     print(table)
 
 
-def cmp(x, y):
+def cmp(x, y) -> boolean:
     """
     Docs
     """
     return (x > y) - (x < y)
 
 
-def multikeysort(items, columns):
+def multikeysort(items: list[dict], columns: list[str]) -> list[dict]:
     """
     Docs
     """
@@ -91,7 +86,7 @@ def multikeysort(items, columns):
         for col in columns
     ]
 
-    def comparer(left, right):
+    def comparer(left, right) -> int:
         comparer_iter = (
             cmp(fn(left), fn(right)) * mult
             for fn, mult in comparers
@@ -100,7 +95,7 @@ def multikeysort(items, columns):
     return sorted(items, key=cmp_to_key(comparer))
 
 
-def sort_results(args, results):
+def sort_results(args: argparse.Namespace, results: list) -> list[dict]:
     """
     Docs
     """
@@ -135,7 +130,7 @@ def sort_results(args, results):
     return results
 
 
-def process_results(args, results):
+def process_results(args: argparse.Namespace, results: list[dict]) -> None:
     """
     Docs
     """
@@ -149,7 +144,7 @@ def process_results(args, results):
         print_table_of_results(sorted_results)
 
 
-def get_region_long_name(ssm, short_code):
+def get_region_long_name(ssm, short_code: str) -> str:
     """
     something here
     """
@@ -159,7 +154,7 @@ def get_region_long_name(ssm, short_code):
     return response['Parameters'][0]['Value']
 
 
-def get_region_short_codes(ssm):
+def get_region_short_codes(ssm) -> set[str]:
     """
     something here
     """
@@ -171,7 +166,7 @@ def get_region_short_codes(ssm):
     return output
 
 
-def get_region_list():
+def get_region_list() -> dict[str, str]:
     """
     something here
     """
@@ -194,7 +189,7 @@ def get_region_list():
     return sorted_regions
 
 
-def filter_region_list(args, all_regions):
+def filter_region_list(args: argparse.Namespace, all_regions: dict[str, str]) -> dict[str, str]:
     """
     Docs
     """
@@ -223,7 +218,7 @@ def paginate(client, method, **kwargs):
             yield result
 
 
-def get_rds_snapshots(args, region):
+def get_rds_snapshots(args: argparse.Namespace, region: str) -> list[dict]:
     """
     docs
     """
@@ -234,23 +229,32 @@ def get_rds_snapshots(args, region):
     try:
         rds_snapshots = paginate(client, client.describe_db_snapshots, IncludePublic=True, IncludeShared=False, SnapshotType='public')
         for snapshot in rds_snapshots:
+            matched = False
+
             # Make sure it is available first
             if snapshot['Status'] == 'available':
 
                 # Test DBSnapshotIdentifier and DBInstanceIdentifier
-                if re.match(args.search, snapshot['DBSnapshotIdentifier'], re.IGNORECASE) or re.match(args.search, snapshot['DBInstanceIdentifier'], re.IGNORECASE):
+                if args.case_insensitive:
+                    if re.match(args.search, snapshot['DBSnapshotIdentifier'], re.IGNORECASE) or re.match(args.search, snapshot['DBInstanceIdentifier'], re.IGNORECASE):
+                        matched = True
+                else:
+                    if re.match(args.search, snapshot['DBSnapshotIdentifier']) or re.match(args.search, snapshot['DBInstanceIdentifier']):
+                        matched = True
+
+                if matched is True:
                     # Add missing info
                     snapshot['Region'] = region
                     snapshot['SnapshotCreateTimeFormatted'] = snapshot['SnapshotCreateTime'].strftime("%-d %b %Y %X")
                     results.append(snapshot)
-    except botocore.exceptions.ClientError:
+    except ClientError:
         # These are regions that are not enabled so ignore and move on
         pass
 
     return results
 
 
-def find_snapshots_per_region(region, args, spinner):
+def find_snapshots_per_region(region: str, args: argparse.Namespace, spinner: Any) -> list[dict]:
     """
     Docs
     """
@@ -270,7 +274,7 @@ def find_snapshots_per_region(region, args, spinner):
     return results
 
 
-def find_snapshots(args):
+def find_snapshots(args: argparse.Namespace) -> list:
     """
     Docs
     """
@@ -302,12 +306,12 @@ class CustomFormatter(argparse.ArgumentDefaultsHelpFormatter, argparse.RawDescri
     pass
 
 
-def setup_arg_parser():
+def setup_arg_parser() -> argparse.ArgumentParser:
     """
     Setup the arguments parser to handle the user input from the command line.
     """
 
-    epilog = "Search Options: E=Database Engine, R=Region Name, S=Databse Size, T=Creation Time.\nPrefixing any of the above with an exclamation sign (!) will invert the order."
+    epilog = "Search Options: E=Database Engine, R=Region Name, S=Database Size, T=Creation Time.\nPrefixing any of the above with an exclamation sign (!) will invert the order."
 
     parser = argparse.ArgumentParser(prog='find-public-rds-snapshots', description='Locate any public rds snapshots', add_help=False, epilog=epilog, formatter_class=CustomFormatter)
     flags = parser.add_argument_group('flags')
@@ -318,12 +322,13 @@ def setup_arg_parser():
     flags.add_argument('-h', '--help', action='help', default=argparse.SUPPRESS, help='show this help message and exit')
     flags.add_argument('-v', '--verbose', action="store_true", help="Account level output", default=False)
 
-    required.add_argument('-r', '--regions', type=str, help='A comma seperated list of regions to search', default='all')
+    required.add_argument('-r', '--regions', type=str, help='A comma separated list of regions to search', default='all')
     required.add_argument('-s', '--search', type=str, help='The search regex', default='.*')
 
+    optional.add_argument('-i', '--case-insensitive', action="store_true", help="Make the search case insensitive", default=False)
     optional.add_argument('-t', '--terminal', action="store_true", help="Draw a table of the results on the terminal", default=False)
     optional.add_argument('-c', '--csv', action="store_true", help="Save the results as a csv formatted file", default=False)
-    optional.add_argument('-j', '--json', action="store_true", help="Save the results as a json formarted file", default=False)
+    optional.add_argument('-j', '--json', action="store_true", help="Save the results as a json formatted file", default=False)
     optional.add_argument('-f', '--filename', type=str, help='The filename to save the results to', default='search-results')
 
     sorting.add_argument('-S', '--sort-order', type=str, help="Define the sort order of the results (E, R, S, T)")
@@ -331,9 +336,9 @@ def setup_arg_parser():
     return parser
 
 
-def process_arguments():
+def process_arguments() -> argparse.Namespace:
     """
-    Main wrapper for handling the arguments, setup, read and valiate all before returning to main().
+    Main wrapper for handling the arguments, setup, read and validate all before returning to main().
     """
 
     parser = setup_arg_parser()
@@ -342,7 +347,7 @@ def process_arguments():
     try:
         re.compile(args.search)
     except re.error:
-        print(stylize(f"Error: {args.search} is not a valid regex patternh - Aborting!", colored.fg("red")))
+        print(stylize(f"Error: {args.search} is not a valid regex pattern - Aborting!", colored.fg("red")))
         sys.exit(0)
 
     # This sis the slowest part - so lets do this last
@@ -352,7 +357,7 @@ def process_arguments():
     return args
 
 
-def main():
+def main() -> None:
     """
     The main function.
     """

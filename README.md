@@ -33,11 +33,23 @@
 
 ## Overview
 
+This tool will allow you to search for ALL public RDS snapshots based on a given regular expression (regex). The default regular expression is .* which means match everything.
+
+Like most tools that could be exploited for nefarious means, we did think long and hard about wether we should release this tool or not, but we decided that most of the `bad actors` already have tools like this and this tool could be used by the `good guys` to protect themselves.
+
+### Example Usage
+
+The following example will search for all public RDS snapshots which contain the word `wolf software`.
+
+```shell
+./find-public-rds-snapshots.py -s 'wolf.+software'
+```
+> The search text is matched against the DBSnapshotIdentifier and the DBInstanceIdentifier. Please refer to the [AWS documentation](https://docs.aws.amazon.com/cli/latest/reference/rds/describe-db-snapshots.html) for more details.
 
 ## Usage
 
 ```shell
-usage: find-public-rds-snapshots [-h] [-v] [-r REGIONS] [-s SEARCH] [-t] [-c] [-j] [-f FILENAME] [-S SORT_ORDER]
+usage: find-public-rds-snapshots [-h] [-v] [-r REGIONS] [-s SEARCH] [-i] [-t] [-c] [-j] [-f FILENAME] [-S SORT_ORDER]
 
 Locate any public rds snapshots
 
@@ -47,22 +59,29 @@ flags:
 
 required arguments:
   -r REGIONS, --regions REGIONS
-                        A comma seperated list of regions to search (default: all)
+                        A comma separated list of regions to search (default: all)
   -s SEARCH, --search SEARCH
                         The search regex (default: .*)
 
 optional arguments:
+  -i, --case-insensitive
+                        Make the search case insensitive (default: False)
   -t, --terminal        Draw a table of the results on the terminal (default: False)
   -c, --csv             Save the results as a csv formatted file (default: False)
-  -j, --json            Save the results as a json formarted file (default: False)
+  -j, --json            Save the results as a json formatted file (default: False)
   -f FILENAME, --filename FILENAME
                         The filename to save the results to (default: search-results)
 
 sorting arguments:
   -S SORT_ORDER, --sort-order SORT_ORDER
-                        Define the sort order of the results (E,R,S,T) (default: None)
+                        Define the sort order of the results (E, R, S, T) (default: None)
 
-Search Options: E=Database Engine, R=Region Name, S=Databse Size, T=Creation Time.
+Search Options: E=Database Engine, R=Region Name, S=Database Size, T=Creation Time.
 Prefixing any of the above with an exclamation sign (!) will invert the order.
-
 ```
+
+## Known Limitations
+
+The script can only locate public RDS snapshots within regions to which your account credentials have access, so if a region is NOT enabled in your account then you will not see public RDS snapshots from that region.
+
+If you want to see which regions you have access to, then we provide a tool for that also. [AWS List Regions](https://github.com/AWSToolbox/list-regions)
