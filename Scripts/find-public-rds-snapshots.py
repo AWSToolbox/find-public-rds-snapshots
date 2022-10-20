@@ -7,7 +7,6 @@ Docs to follow
 import argparse
 import csv
 import json
-from multiprocessing.connection import Client
 import re
 import sys
 import warnings
@@ -218,6 +217,23 @@ def paginate(client, method, **kwargs):
             yield result
 
 
+def matched_snapshot(snapshot: dict, args: argparse.Namespace) -> boolean:
+    """
+    Docs
+    """
+
+    # Make sure it is available first
+    if snapshot['Status'] == 'available':
+        # Test DBSnapshotIdentifier and DBInstanceIdentifier
+        if args.case_insensitive:
+            if re.match(args.search, snapshot['DBSnapshotIdentifier'], re.IGNORECASE) or re.match(args.search, snapshot['DBInstanceIdentifier'], re.IGNORECASE):
+                return True
+        else:
+            if re.match(args.search, snapshot['DBSnapshotIdentifier']) or re.match(args.search, snapshot['DBInstanceIdentifier']):
+                return True
+
+    return False
+
 def get_rds_snapshots(args: argparse.Namespace, region: str) -> list[dict]:
     """
     docs
@@ -229,24 +245,11 @@ def get_rds_snapshots(args: argparse.Namespace, region: str) -> list[dict]:
     try:
         rds_snapshots = paginate(client, client.describe_db_snapshots, IncludePublic=True, IncludeShared=False, SnapshotType='public')
         for snapshot in rds_snapshots:
-            matched = False
-
-            # Make sure it is available first
-            if snapshot['Status'] == 'available':
-
-                # Test DBSnapshotIdentifier and DBInstanceIdentifier
-                if args.case_insensitive:
-                    if re.match(args.search, snapshot['DBSnapshotIdentifier'], re.IGNORECASE) or re.match(args.search, snapshot['DBInstanceIdentifier'], re.IGNORECASE):
-                        matched = True
-                else:
-                    if re.match(args.search, snapshot['DBSnapshotIdentifier']) or re.match(args.search, snapshot['DBInstanceIdentifier']):
-                        matched = True
-
-                if matched is True:
-                    # Add missing info
-                    snapshot['Region'] = region
-                    snapshot['SnapshotCreateTimeFormatted'] = snapshot['SnapshotCreateTime'].strftime("%-d %b %Y %X")
-                    results.append(snapshot)
+            if matched_snapshot(snapshot, args) is True:
+                # Add missing info
+                snapshot['Region'] = region
+                snapshot['SnapshotCreateTimeFormatted'] = snapshot['SnapshotCreateTime'].strftime("%-d %b %Y %X")
+                results.append(snapshot)
     except ClientError:
         # These are regions that are not enabled so ignore and move on
         pass
