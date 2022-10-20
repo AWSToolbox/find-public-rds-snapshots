@@ -234,6 +234,7 @@ def matched_snapshot(snapshot: dict, args: argparse.Namespace) -> boolean:
 
     return False
 
+
 def get_rds_snapshots(args: argparse.Namespace, region: str) -> list[dict]:
     """
     docs
