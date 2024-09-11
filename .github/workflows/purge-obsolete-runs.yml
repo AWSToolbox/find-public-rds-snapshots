@@ -2,7 +2,7 @@ name: Purge obsolete workflow runs
 on:
   workflow_dispatch:
   schedule:
-    - cron: '53 5 * * 1'
+    - cron: '31 4 * * 1'
 
 jobs:
   purge_obsolete_workflows:

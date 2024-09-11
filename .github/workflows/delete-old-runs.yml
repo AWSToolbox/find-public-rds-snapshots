@@ -11,7 +11,7 @@ on:
         required: true
         default: '6'
   schedule:
-    - cron: '32 2 * * *'
+    - cron: '41 3 * * *'
 
 jobs:
   delete_old_workflows:

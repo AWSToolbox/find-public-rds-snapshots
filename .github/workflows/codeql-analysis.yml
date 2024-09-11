@@ -7,7 +7,7 @@ on:
     branches: [ '**' ]
   workflow_dispatch:
   schedule:
-    - cron: '2 4 * * 1'
+    - cron: '45 4 * * 1'
 
 jobs:
   analyze:

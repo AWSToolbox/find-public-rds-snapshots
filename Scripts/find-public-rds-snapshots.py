@@ -15,7 +15,6 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from functools import cmp_to_key
 from operator import itemgetter
 from typing import Any
-from xmlrpc.client import boolean
 
 import colored
 import boto3
@@ -69,7 +68,7 @@ def print_table_of_results(results: list[dict]) -> None:
     print(table)
 
 
-def cmp(x, y) -> boolean:
+def cmp(x, y) -> Any:
     """
     Docs
     """
@@ -217,7 +216,7 @@ def paginate(client, method, **kwargs):
             yield result
 
 
-def matched_snapshot(snapshot: dict, args: argparse.Namespace) -> boolean:
+def matched_snapshot(snapshot: dict, args: argparse.Namespace) -> Any:
     """
     Docs
     """

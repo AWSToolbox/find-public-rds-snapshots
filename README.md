@@ -13,13 +13,13 @@
         <img src="https://img.shields.io/github/commits-since/AWSToolbox/find-public-rds-snapshots/latest.svg?color=blue&style=for-the-badge" alt="Commits since release">
     </a>
     <br />
-    <a href=".github/CODE_OF_CONDUCT.md">
+    <a href="https://github.com/AWSToolbox/find-public-rds-snapshots/blob/master/.github/CODE_OF_CONDUCT.md">
         <img src="https://img.shields.io/badge/Code%20of%20Conduct-blue?style=for-the-badge" />
     </a>
-    <a href=".github/CONTRIBUTING.md">
+    <a href="https://github.com/AWSToolbox/find-public-rds-snapshots/blob/master/.github/CONTRIBUTING.md">
         <img src="https://img.shields.io/badge/Contributing-blue?style=for-the-badge" />
     </a>
-    <a href=".github/SECURITY.md">
+    <a href="https://github.com/AWSToolbox/find-public-rds-snapshots/blob/master/.github/SECURITY.md">
         <img src="https://img.shields.io/badge/Report%20Security%20Concern-blue?style=for-the-badge" />
     </a>
     <a href="https://github.com/AWSToolbox/find-public-rds-snapshots/issues">
